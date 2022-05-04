@@ -624,6 +624,7 @@ static bool check_subject_name(
             {
                 if (is_domain_in_set(domain_id, rule.domains))
                 {
+                    ah->governance_rule_.allow_unauthenticated_participants = rule.allow_unauthenticated_participants;
                     ah->governance_rule_.is_access_protected = rule.enable_join_access_control;
 
                     PluginParticipantSecurityAttributes plug_part_attr;
@@ -1056,7 +1057,8 @@ bool Permissions::check_remote_participant(
         return false;
     }
 
-    if (!rah->governance_rule_.is_access_protected)
+    if (!rah->governance_rule_.is_access_protected ||
+        rah->governance_rule_.allow_unauthenticated_participants)
     {
         return true;
     }
