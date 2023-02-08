@@ -218,6 +218,14 @@ bool PDPSimple::updateInfoMatchesEDP()
 
 void PDPSimple::announceParticipantState(
         bool new_change,
+        bool dispose /* = false */)
+{
+    WriteParams __wp = WriteParams::write_params_default();
+    announceParticipantState(new_change, dispose, __wp);
+}
+
+void PDPSimple::announceParticipantState(
+        bool new_change,
         bool dispose,
         WriteParams& wp)
 {
