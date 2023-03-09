@@ -19,6 +19,8 @@
 #include <fastdds/rtps/resources/ResourceEvent.h>
 #include <fastdds/dds/log/Log.hpp>
 
+#include <utils/threading.hpp>
+
 #include "TimedEventImpl.h"
 
 #include <cassert>
@@ -169,6 +171,8 @@ bool ResourceEvent::register_timer_nts(
 
 void ResourceEvent::event_service()
 {
+    set_name_to_current_thread("dds.time-ev");
+
     while (!stop_.load())
     {
         // Perform update and execution of timers
