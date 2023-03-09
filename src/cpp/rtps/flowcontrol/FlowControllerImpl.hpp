@@ -4,6 +4,7 @@
 #include "FlowController.hpp"
 #include <fastdds/rtps/common/Guid.h>
 #include <fastdds/rtps/writer/RTPSWriter.h>
+#include <utils/threading.hpp>
 
 #include <atomic>
 #include <cassert>
@@ -1257,6 +1258,8 @@ private:
      */
     void run()
     {
+        set_name_to_current_thread("dds.async");
+
         while (async_mode.running)
         {
             // There are writers interested in removing a sample.
