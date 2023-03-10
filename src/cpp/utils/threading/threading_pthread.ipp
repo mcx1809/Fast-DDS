@@ -18,6 +18,11 @@
 
 namespace eprosima {
 
+void set_current_thread_scheduling(
+        fastdds_thread_kind_t /* kind */)
+{
+}
+
 void set_name_to_current_thread(
         const char* fmt,
         uint32_t arg)

@@ -17,6 +17,30 @@
 
 namespace eprosima {
 
+enum class fastdds_thread_kind_t : unsigned int
+{
+    // One of these per process
+    LOG_THREAD = 0,
+    SHM_WATCHDOG_THREAD,
+
+    // One of these per participant
+    TIMED_EVENTS_THREAD,
+
+    // One of these per flow-controller (by default one for all ASYNCHRONOWS DataWriters)
+    ASYNC_THREAD,
+
+    // One of these per transport channel (i.e. port)
+    UDP_RECEPTION_THREAD,
+    SHM_RECEPTION_THREAD,
+    TCP_RECEPTION_THREAD,
+
+    // One of these per data-sharing DataReader
+    DATA_SHARING_LISTENER_THREAD,
+};
+
+void set_current_thread_scheduling(
+        fastdds_thread_kind_t kind);
+
 void set_name_to_current_thread(
         const char* fmt,
         uint32_t arg);
