@@ -254,6 +254,7 @@ private:
     void run()
     {
         set_name_to_current_thread("dds.log");
+        set_current_thread_scheduling(fastdds_thread_kind_t::LOG_THREAD);
 
         std::unique_lock<std::mutex> guard(cv_mutex_);
 

@@ -124,6 +124,7 @@ private:
     void run()
     {
         set_name_to_current_thread("dds.shm.wdog");
+        set_current_thread_scheduling(fastdds_thread_kind_t::SHM_WATCHDOG_THREAD);
 
         while (!exit_thread_)
         {

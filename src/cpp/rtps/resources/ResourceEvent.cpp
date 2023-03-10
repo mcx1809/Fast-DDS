@@ -172,6 +172,7 @@ bool ResourceEvent::register_timer_nts(
 void ResourceEvent::event_service()
 {
     set_name_to_current_thread("dds.time-ev");
+    set_current_thread_scheduling(fastdds_thread_kind_t::TIMED_EVENTS_THREAD);
 
     while (!stop_.load())
     {

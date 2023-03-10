@@ -55,6 +55,7 @@ void UDPChannelResource::perform_listen_operation(
         Locator input_locator)
 {
     set_name_to_current_thread("dds.udp.%u", input_locator.port);
+    set_current_thread_scheduling(fastdds_thread_kind_t::UDP_RECEPTION_THREAD);
 
     Locator remote_locator;
 

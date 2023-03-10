@@ -126,6 +126,7 @@ private:
             Locator input_locator)
     {
         set_name_to_current_thread("dds.shm.%u", input_locator.port);
+        set_current_thread_scheduling(fastdds_thread_kind_t::SHM_RECEPTION_THREAD);
 
         Locator remote_locator;
 

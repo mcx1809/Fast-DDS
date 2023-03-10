@@ -1259,6 +1259,7 @@ private:
     void run()
     {
         set_name_to_current_thread("dds.async");
+        set_current_thread_scheduling(fastdds_thread_kind_t::ASYNC_THREAD);
 
         while (async_mode.running)
         {

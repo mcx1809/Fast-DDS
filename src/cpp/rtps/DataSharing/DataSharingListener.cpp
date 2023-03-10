@@ -51,6 +51,7 @@ DataSharingListener::~DataSharingListener()
 void DataSharingListener::run()
 {
     set_name_to_current_thread("dds.dsha.%u", reader_->getGuid().entityId.to_uint32() & 0x0000FFFF);
+    set_current_thread_scheduling(fastdds_thread_kind_t::DATA_SHARING_LISTENER_THREAD);
 
     std::unique_lock<Segment::mutex> lock(notification_->notification_->notification_mutex, std::defer_lock);
     while (is_running_.load())
