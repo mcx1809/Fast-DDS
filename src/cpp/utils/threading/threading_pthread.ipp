@@ -13,10 +13,101 @@
 // limitations under the License.
 
 #include <pthread.h>
-#include <string.h>
 #include <stdio.h>
+#include <string.h>
+#include <sys/resource.h>
+#include <sys/sysinfo.h>
+#include <sys/time.h>
+#include <sys/types.h>
 
 namespace eprosima {
+
+static int _configure_scheduler(int m_sched_class, int m_sched_priority)
+{
+    pthread_t self_tid = pthread_self();
+    sched_param param;
+    int result = 0;
+    
+    memset(&param, 0, sizeof(param));
+    param.sched_priority = 0;
+    
+    //
+    // Set Scheduler Class and Priority       
+    //
+    
+    if((m_sched_class == SCHED_OTHER) ||
+       (m_sched_class == SCHED_BATCH) ||
+       (m_sched_class == SCHED_IDLE)) 
+    {               
+        //
+        // BATCH and IDLE do not have explicit priority values.
+        // - Requires priorty value to be zero (0).
+        
+        result = pthread_setschedparam(self_tid, m_sched_class, &param);
+
+        //
+        // Sched OTHER has a nice value, that we pull from the priority parameter.
+        // 
+        
+        if(m_sched_class == SCHED_OTHER)
+        {            
+            result = setpriority(PRIO_PROCESS, gettid(), m_sched_priority);
+        }                
+    }
+    else if((m_sched_class == SCHED_FIFO) ||
+            (m_sched_class == SCHED_RR))
+    {
+        //
+        // RT Policies use a different priority numberspace.
+        //
+        
+        param.sched_priority = m_sched_priority;
+        result = pthread_setschedparam(self_tid, m_sched_class, &param);
+    }
+
+    return result;
+}
+
+
+static int _configure_affinity(uint32_t affinity_mask)
+{    
+    int a;
+    int result;
+    int cpu_count;
+    cpu_set_t  m_cpu_set;    
+
+    result = 0;
+       
+    //
+    // Rebuilt the cpu set from scratch...
+    //
+    
+    CPU_ZERO(&m_cpu_set);
+
+    //
+    // If the bit is set in our mask, set it into the cpu_set
+    // We only consider up to the total number of CPU's the
+    // system has.
+    //
+
+    cpu_count = get_nprocs_conf();
+    
+    for(a = 0; a < cpu_count; a++)
+    {
+        if(affinity_mask & (1 << a))
+        {            
+            CPU_SET(a, &m_cpu_set);
+            result++;
+        }
+    }
+
+    if(result > 0)
+    {
+        result = pthread_setaffinity_np(pthread_self(), sizeof(cpu_set_t), &m_cpu_set);
+    }
+    
+    return result;
+}
 
 void set_current_thread_scheduling(
         fastdds_thread_kind_t /* kind */)
