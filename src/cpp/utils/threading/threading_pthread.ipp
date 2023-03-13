@@ -139,8 +139,17 @@ static int _configure_affinity(uint32_t affinity_mask)
 }
 
 void set_current_thread_scheduling(
-        fastdds_thread_kind_t /* kind */)
+        fastdds_thread_kind_t kind)
 {
+    if (kind < fastdds_thread_kind_t::THREAD_KIND_NUMBER)
+    {
+        ThreadConfig_t cfg = thread_configuration[(unsigned int)kind];
+        _configure_scheduler(cfg.sched_class, cfg.sched_priority);
+        if (cfg.cpu_mask != 0)
+        {
+            _configure_affinity(cfg.cpu_mask);
+        }
+    }
 }
 
 void set_name_to_current_thread(
