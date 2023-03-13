@@ -22,6 +22,35 @@
 
 namespace eprosima {
 
+// Thread configuration struct.
+// Defaults to nice value 0, and not changing CPU affinity.
+struct ThreadConfig_t
+{
+    int sched_class = SCHED_OTHER;
+    int sched_priority = 0;
+    uint32_t cpu_mask = 0;
+};
+
+static const ThreadConfig_t thread_configuration[(unsigned int)fastdds_thread_kind_t::THREAD_KIND_NUMBER]
+{
+    // LOG_THREAD: one of these per process
+    ThreadConfig_t{},
+    // SHM_WATCHDOG_THREAD: one of these per process
+    ThreadConfig_t{},
+    // TIMED_EVENTS_THREAD: one of these per participant
+    ThreadConfig_t{},
+    // ASYNC_THREAD: One of these per flow-controller (by default one for all ASYNCHRONOWS DataWriters)
+    ThreadConfig_t{},
+    // UDP_RECEPTION_THREAD: one of these per transport channel (i.e. port)
+    ThreadConfig_t{},
+    // SHM_RECEPTION_THREAD: one of these per transport channel (i.e. port)
+    ThreadConfig_t{},
+    // TCP_RECEPTION_THREAD: one of these per transport channel (i.e. port)
+    ThreadConfig_t{},
+    // DATA_SHARING_LISTENER_THREAD: one of these per data-sharing DataReader
+    ThreadConfig_t{}    
+};
+
 static int _configure_scheduler(int m_sched_class, int m_sched_priority)
 {
     pthread_t self_tid = pthread_self();

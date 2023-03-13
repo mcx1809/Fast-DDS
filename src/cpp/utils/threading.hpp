@@ -36,6 +36,8 @@ enum class fastdds_thread_kind_t : unsigned int
 
     // One of these per data-sharing DataReader
     DATA_SHARING_LISTENER_THREAD,
+
+    THREAD_KIND_NUMBER
 };
 
 void set_current_thread_scheduling(
