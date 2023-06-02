@@ -1,4 +1,4 @@
-// Copyright 2021 Proyectos y Sistemas de Mantenimiento SL (eProsima).
+// Copyright 2022 Proyectos y Sistemas de Mantenimiento SL (eProsima).
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -13,7 +13,7 @@
 // limitations under the License.
 
 /**
- * @file BasicConfigurationSubscriber.cpp
+ * @file AdvancedConfigurationSubscriber.cpp
  *
  */
 
@@ -30,7 +30,7 @@
 #include <fastrtps/attributes/ParticipantAttributes.h>
 #include <fastrtps/attributes/SubscriberAttributes.h>
 
-#include "BasicConfigurationSubscriber.h"
+#include "AdvancedConfigurationSubscriber.h"
 
 using namespace eprosima::fastdds::dds;
 using namespace eprosima::fastdds::rtps;
@@ -65,31 +65,63 @@ bool HelloWorldSubscriber::init(
         uint32_t domain,
         TransportType transport,
         bool reliable,
-        bool transient)
+        bool transient,
+        int hops,
+        const std::string& partitions,
+        bool use_ownership)
 {
     DomainParticipantQos pqos;
     pqos.name("Participant_sub");
 
     // TRANSPORT CONFIG
     // If it is set, not use default and set the transport
-    if (transport != DEFAULT)
+    if (transport != DEFAULT || hops > 0 )
     {
         pqos.transport().use_builtin_transports = false;
 
-        if (transport == SHM)
+        switch ( transport )
         {
-            auto shm_transport = std::make_shared<SharedMemTransportDescriptor>();
-            pqos.transport().user_transports.push_back(shm_transport);
+            case SHM:
+            {
+                auto shm_transport = std::make_shared<SharedMemTransportDescriptor>();
+                pqos.transport().user_transports.push_back(shm_transport);
+            }
+            break;
+            case UDPv4:
+            {
+                auto udp_transport = std::make_shared<UDPv4TransportDescriptor>();
+                pqos.transport().user_transports.push_back(udp_transport);
+            }
+            break;
+            case UDPv6:
+            {
+                auto udp_transport = std::make_shared<UDPv6TransportDescriptor>();
+                pqos.transport().user_transports.push_back(udp_transport);
+            }
+            break;
+            case DEFAULT:
+            default:
+            {
+                // mimick default transport selection
+                auto udp_transport = std::make_shared<UDPv4TransportDescriptor>();
+                pqos.transport().user_transports.push_back(udp_transport);
+#ifdef SHM_TRANSPORT_BUILTIN
+                auto shm_transport = std::make_shared<SharedMemTransportDescriptor>();
+                pqos.transport().user_transports.push_back(shm_transport);
+#endif // SHM_TRANSPORT_BUILTIN
+            }
         }
-        else if (transport == UDPv4)
+
+        if ( hops > 0 )
         {
-            auto udp_transport = std::make_shared<UDPv4TransportDescriptor>();
-            pqos.transport().user_transports.push_back(udp_transport);
-        }
-        else if (transport == UDPv6)
-        {
-            auto udp_transport = std::make_shared<UDPv6TransportDescriptor>();
-            pqos.transport().user_transports.push_back(udp_transport);
+            for (auto& transportDescriptor : pqos.transport().user_transports)
+            {
+                SocketTransportDescriptor* pT = dynamic_cast<SocketTransportDescriptor*>(transportDescriptor.get());
+                if (pT)
+                {
+                    pT->TTL = (uint8_t)std::min(hops, 255);
+                }
+            }
         }
     }
 
@@ -105,7 +137,20 @@ bool HelloWorldSubscriber::init(
     type_.register_type(participant_);
 
     // CREATE THE SUBSCRIBER
-    subscriber_ = participant_->create_subscriber(SUBSCRIBER_QOS_DEFAULT, nullptr);
+    SubscriberQos sqos;
+
+    if (!partitions.empty())
+    {
+        // Divide in partitions by ;
+        std::stringstream spartitions(partitions);
+        std::string partition_cut;
+        while (std::getline(spartitions, partition_cut, ';'))
+        {
+            sqos.partition().push_back(partition_cut.c_str());
+        }
+    }
+
+    subscriber_ = participant_->create_subscriber(sqos, nullptr);
 
     if (subscriber_ == nullptr)
     {
@@ -143,6 +188,7 @@ bool HelloWorldSubscriber::init(
     if (reliable)
     {
         rqos.reliability().kind = RELIABLE_RELIABILITY_QOS;
+        rqos.history().kind = KEEP_ALL_HISTORY_QOS;
     }
     else
     {
@@ -158,12 +204,20 @@ bool HelloWorldSubscriber::init(
         rqos.durability().kind = VOLATILE_DURABILITY_QOS;   // default
     }
 
+    // Set ownership
+    if (use_ownership)
+    {
+        rqos.ownership().kind = OwnershipQosPolicyKind::EXCLUSIVE_OWNERSHIP_QOS;
+    }
+
     reader_ = subscriber_->create_datareader(topic_, rqos, &listener_);
 
     if (reader_ == nullptr)
     {
         return false;
     }
+
+    std::cout << "Subscriber Participant created with DataReader Guid [ " << reader_->guid() << " ]." << std::endl;
 
     return true;
 }
@@ -201,12 +255,12 @@ void HelloWorldSubscriber::SubListener::on_subscription_matched(
     if (info.current_count_change == 1)
     {
         matched_ = info.current_count;
-        std::cout << "Subscriber matched." << std::endl;
+        std::cout << "Subscriber matched [ " << iHandle2GUID(info.last_publication_handle) << " ]." << std::endl;
     }
     else if (info.current_count_change == -1)
     {
         matched_ = info.current_count;
-        std::cout << "Subscriber unmatched." << std::endl;
+        std::cout << "Subscriber unmatched [ " << iHandle2GUID(info.last_publication_handle) << " ]." << std::endl;
     }
     else
     {
