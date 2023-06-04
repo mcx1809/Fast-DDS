@@ -3,6 +3,9 @@
 
 #include <fastrtps/fastrtps_dll.h>
 
+#if defined(_WIN32) || ((__GNUC__ >= 13) && (__GNUC_MINOR__ >= 1))
+#include <cstdint>
+#endif // ifdef _WIN32
 #include <string>
 #include <vector>
 
